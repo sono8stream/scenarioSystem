@@ -9,16 +9,29 @@ using System.IO;
 
 public class WindowSample : EditorWindow
 {
-    //const string NEW_LINE = "\r\n";//for win
+    const string SCRIPT_FOLDER_PATH = "Assets/Resources/ScenarioScript/";
+    const string CHARA_FLODER_PATH = "Assets/Resources/Portrait/";
+    const string SCENERY_FLODER_PATH = "Assets/Resources/Scenery/";
+    const string BGM_FLODER_PATH = "Assets/Resources/BGM/";
+    const string SE_FLODER_PATH = "Assets/Resources/SE/";
 
     bool okDialog = false;
+
     TextAsset script = null;
-    //string scriptText;
-    List<string> scriptLines = new List<string>();
     string scriptName;
-    string inputMessage;
+    List<string> scriptLines = new List<string>();
     Vector2 scriptScrollPosition = Vector2.zero;
+
     CommandMessages messages = new CommandMessages();
+    string inputMessage = "";
+    int messageSpeed;
+    string choiceName;
+
+    Sprite charaSprite;
+    Sprite scenerySprite;
+
+    AudioClip bgm;
+    AudioClip se;
 
     [MenuItem("Editor/ScriptEditor")]
     private static void OnCreate()
@@ -37,11 +50,8 @@ public class WindowSample : EditorWindow
             if (tempScript != script)
             {
                 script = tempScript;
-                //scriptText = script.text;
-                /*scriptLines = new List<string>();
-                scriptLines.AddRange(Regex.Split(script.text, "\r\n|\r|\n"));*/
-                LoadScript();
                 scriptName = script.name;
+                LoadScript();
             }
         }
         EditorGUILayout.Space();
@@ -109,13 +119,8 @@ public class WindowSample : EditorWindow
 
             using (new GUILayout.VerticalScope(GUILayout.Width(300)))
             {
-                using(new GUILayout.VerticalScope(GUI.skin.box))//メッセージコマンド
-                {
-                    if (GUILayout.Button("文字表示"))
-                    {
+                MessageGUI();
 
-                    }
-                }
                 GUILayout.FlexibleSpace();
 
                 SaveButton();
@@ -141,60 +146,41 @@ public class WindowSample : EditorWindow
         }
     }
 
-    void SaveScript(string scriptText)
+    void SaveScript(string text)
     {
-        string path = Application.dataPath + string.Format(
-                "\\Script\\ScenarioSystem\\ScenarioScript\\{0}.txt", scriptName);
+        string path = SCRIPT_FOLDER_PATH + string.Format("{0}.txt", scriptName);
 
-        if (File.Exists(path))
+        if (File.Exists(path) && !EditorUtility.DisplayDialog(
+                "ファイル重複", "上書きしますか?", "OK", "キャンセル")) return;
+
+        using (StreamWriter sw = new StreamWriter(path, false))
         {
-            Debug.Log("Another File Exists!");
-
-            okDialog = EditorUtility.DisplayDialog(
-                "ファイル重複", "上書きしますか?", "OK", "キャンセル");
-
-            if (okDialog)
-            {
-                using (StreamWriter sw = new StreamWriter(path, false))
-                {
-                    sw.Write(scriptText);
-                    sw.Flush();
-                    sw.Close();
-                }
-                Debug.Log("Over Write Data!");
-            }
+            sw.Write(text);
+            sw.Flush();
+            sw.Close();
         }
-        else
-        {
-            using (StreamWriter sw = new StreamWriter(path, false))
-            {
-                sw.Write(scriptText);
-                sw.Flush();
-                sw.Close();
-            }
-            Debug.Log("Save Data!");
-        }
+        Debug.Log("Save Data!");
+        AssetDatabase.Refresh();
+        //AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+        LoadScript();
     }
 
     void LoadScript()
     {
-        string path = Application.dataPath + string.Format(
-                "\\Script\\ScenarioSystem\\ScenarioScript\\{0}.txt", script.name);
-        if (!File.Exists(path)) return;
-
-        using (StreamReader sr = new StreamReader(path, false))
+        string path = SCRIPT_FOLDER_PATH + string.Format("{0}.txt", scriptName);
+        script = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
+        if (!File.Exists(path))
         {
-            scriptLines = new List<string>();
-            string line;
-            while((line=sr.ReadLine())!=null)
-            {
-                scriptLines.Add(line);
-            }
-            sr.Close();
+            script = null;
+            return;
         }
+
+        scriptLines = new List<string>();
+        scriptLines.AddRange(Regex.Split(script.text, "\r\n|\r|\n"));
     }
     #endregion
 
+    #region script box management
     void WriteScript()
     {
         if (script == null) return;
@@ -251,4 +237,36 @@ public class WindowSample : EditorWindow
         }
         return index;
     }
+    #endregion
+
+    #region message management
+    void MessageGUI()
+    {
+        using (new GUILayout.VerticalScope(GUI.skin.box))
+        {
+            using (new GUILayout.HorizontalScope())
+            {
+                messageSpeed = Mathf.Clamp(EditorGUILayout.IntField(messageSpeed), 0, 10);
+                if (GUILayout.Button("速度変更"))
+                {
+                    InsertLine(string.Format(@"[m\4\{0}]", messageSpeed.ToString()));
+                }
+            }
+
+            using (new GUILayout.HorizontalScope())
+            {
+                choiceName = EditorGUILayout.TextField(choiceName);
+                if (GUILayout.Button("選択肢追加"))
+                {
+                    InsertLine(string.Format(@"[m\5\{0}]", choiceName));
+                }
+            }
+
+            if (GUILayout.Button("選択待ち"))
+            {
+                InsertLine(@"[m\6\0]");
+            }
+        }
+    }
+    #endregion
 }
