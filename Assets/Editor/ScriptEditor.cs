@@ -7,13 +7,13 @@ using UnityEngine;
 using UnityEditor;
 using System.IO;
 
-public class WindowSample : EditorWindow
+public class ScriptEditor : EditorWindow
 {
     const string SCRIPT_FOLDER_PATH = "Assets/Resources/ScenarioScript/";
-    const string CHARA_FLODER_PATH = "Assets/Resources/Portrait/";
-    const string SCENERY_FLODER_PATH = "Assets/Resources/Scenery/";
-    const string BGM_FLODER_PATH = "Assets/Resources/BGM/";
-    const string SE_FLODER_PATH = "Assets/Resources/SE/";
+    const string CHARA_FOLDER_PATH = "Assets/Resources/Portrait/";
+    const string SCENERY_FOLDER_PATH = "Assets/Resources/Scenery/";
+    const string BGM_FOLDER_PATH = "Assets/Resources/BGM/";
+    const string SE_FOLDER_PATH = "Assets/Resources/SE/";
 
     bool okDialog = false;
 
@@ -27,8 +27,10 @@ public class WindowSample : EditorWindow
     int messageSpeed;
     string choiceName;
 
-    Sprite charaSprite;
-    Sprite scenerySprite;
+    int charaNo;
+    int moveLength;
+    Sprite charaSprite = null;
+    Sprite scenerySprite = null;
 
     AudioClip bgm;
     AudioClip se;
@@ -36,7 +38,12 @@ public class WindowSample : EditorWindow
     [MenuItem("Editor/ScriptEditor")]
     private static void OnCreate()
     {
-        GetWindow<WindowSample>("スクリプトエディタ");
+        //最もよくわかっていない部分　この順番じゃないとダメ
+        ScriptEditor editor = GetWindow<ScriptEditor>();
+        editor.position = new Rect(150, 150, 1020, 600);//サイズ変更
+        VariableEditor variables = GetWindow<VariableEditor>(typeof(ScriptEditor));
+        editor.Focus();
+        variables.Initialize();
     }
 
     private void OnGUI()
@@ -111,7 +118,7 @@ public class WindowSample : EditorWindow
                     {
                         foreach (string s in strs)
                         {
-                            InsertLine("//"+s);
+                            InsertLine("//" + s);
                         }
                     }
                 }
@@ -120,6 +127,8 @@ public class WindowSample : EditorWindow
             using (new GUILayout.VerticalScope(GUILayout.Width(300)))
             {
                 MessageGUI();
+                ImageGUI();
+                SoundGUI();
 
                 GUILayout.FlexibleSpace();
 
@@ -134,7 +143,7 @@ public class WindowSample : EditorWindow
 
     void SaveButton()
     {
-        if (GUILayout.Button("Save")&&!string.IsNullOrEmpty(scriptName))
+        if (GUILayout.Button("Save") && !string.IsNullOrEmpty(scriptName))
         {
             string rawScript = "";
             foreach (string s in scriptLines)
@@ -203,7 +212,7 @@ public class WindowSample : EditorWindow
         int index = SelectedIndex();
         //if (scriptLines.Count == 0) index = 0;
         Debug.Log(index);
-        scriptLines.Insert(index,text);
+        scriptLines.Insert(index, text);
         GUI.FocusControl(index.ToString());
     }
 
@@ -227,7 +236,7 @@ public class WindowSample : EditorWindow
         int index;
         string indexText = GUI.GetNameOfFocusedControl();
         if (indexText.Equals("") || !int.TryParse(indexText, out index)
-            ||index>=scriptLines.Count)
+            || index >= scriptLines.Count)
         {
             index = scriptLines.Count;
         }
@@ -265,6 +274,125 @@ public class WindowSample : EditorWindow
             if (GUILayout.Button("選択待ち"))
             {
                 InsertLine(@"[m\6\0]");
+            }
+        }
+    }
+
+    void ImageGUI()
+    {
+        using (new GUILayout.VerticalScope(GUI.skin.box))
+        {
+            using (new GUILayout.HorizontalScope(GUI.skin.box))
+            {
+                EditorGUILayout.LabelField("・キャラ番号(0～3)");
+                charaNo = Mathf.Clamp(EditorGUILayout.IntField(charaNo), 0, 3);
+            }
+
+            using (new GUILayout.HorizontalScope())
+            {
+                charaSprite = EditorGUILayout.ObjectField("",
+                        charaSprite, typeof(Sprite), false, GUILayout.Width(300)) as Sprite;
+                if (charaSprite != null)
+                {
+                    string charaPath = CHARA_FOLDER_PATH + charaSprite.name;
+                    if (!(File.Exists(charaPath + ".png")
+                        || File.Exists(charaPath + ".jpg"))) charaSprite = null;
+                }
+
+                if (GUILayout.Button("キャラ画像変更") && charaSprite != null)
+                {
+                    InsertLine(string.Format(@"[i\1\{0}:{1}]", charaNo, charaSprite.name));
+                }
+            }
+
+            if (GUILayout.Button("フキダシ追加"))
+            {
+                InsertLine(string.Format(@"[i\2\{0}]", charaNo));
+            }
+
+            if (GUILayout.Button("フキダシ非表示"))
+            {
+                InsertLine(@"[i\2\-1]");
+            }
+
+            using (new GUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField("・移動幅");
+                moveLength = EditorGUILayout.IntField(moveLength);
+                if (GUILayout.Button("キャラ移動"))
+                {
+                    InsertLine(string.Format(@"[i\3\{0}:{1}]", charaNo, moveLength));
+                }
+            }
+
+            using (new GUILayout.HorizontalScope())
+            {
+                scenerySprite = EditorGUILayout.ObjectField("",
+                        scenerySprite, typeof(Sprite), false, GUILayout.Width(300)) as Sprite;
+                if (scenerySprite != null)
+                {
+                    string sceneryPath
+                        = SCENERY_FOLDER_PATH + scenerySprite.name;
+                    if (!(File.Exists(sceneryPath + ".png")
+                        || File.Exists(sceneryPath + ".jpg"))) scenerySprite = null;
+                }
+
+                if (GUILayout.Button("背景画像変更") && scenerySprite != null)
+                {
+                    InsertLine(string.Format(@"[i\4\{0}]", scenerySprite.name));
+                }
+            }
+        }
+    }
+
+    void SoundGUI()
+    {
+        using (new GUILayout.VerticalScope(GUI.skin.box))
+        {
+            using (new GUILayout.HorizontalScope())
+            {
+                bgm = EditorGUILayout.ObjectField(
+                    "", bgm, typeof(AudioClip), false) as AudioClip;
+                if (bgm != null)
+                {
+                    string bgmPath
+                        = BGM_FOLDER_PATH + bgm.name;
+                    if (!(File.Exists(bgmPath + ".mp3")
+                        || File.Exists(bgmPath + ".wav"))) bgm = null;
+                }
+
+                if (GUILayout.Button("BGM変更") && bgm != null)
+                {
+                    InsertLine(string.Format(@"[s\0\{0}]", bgm.name));
+                }
+            }
+
+            if (GUILayout.Button("BGM停止"))
+            {
+                InsertLine(@"[s\1\0]");
+            }
+
+            if (GUILayout.Button("BGM再開"))
+            {
+                InsertLine(@"[s\2\0]");
+            }
+
+            using (new GUILayout.HorizontalScope())
+            {
+                se = EditorGUILayout.ObjectField(
+                    "", se, typeof(AudioClip), false) as AudioClip;
+                if (se != null)
+                {
+                    string sePath
+                        = SE_FOLDER_PATH + se.name;
+                    if (!(File.Exists(sePath + ".mp3")
+                        || File.Exists(sePath + ".wav"))) se = null;
+                }
+
+                if (GUILayout.Button("SE変更") && se != null)
+                {
+                    InsertLine(string.Format(@"[s\3\{0}]", se.name));
+                }
             }
         }
     }
