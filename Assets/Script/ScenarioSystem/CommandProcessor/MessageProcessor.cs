@@ -26,6 +26,7 @@ public class MessageProcessor : CommandProcessor
     bool onSkip;
     bool choiceSelected;
     bool onTag;
+    VariableProcessor varProcessor;
     Waiter messageWaiter;
     Waiter inputWaiter;
     Counter messageLengthCounter;
@@ -34,7 +35,7 @@ public class MessageProcessor : CommandProcessor
     Counter choicesCounter;
     TextLoader loader;
 
-    public void Initialize(TextLoader loader)
+    public void Initialize(TextLoader loader,VariableProcessor vProcessor)
     {
         trigger = 'm';
 
@@ -71,6 +72,7 @@ public class MessageProcessor : CommandProcessor
             t.gameObject.SetActive(false);
         }
         this.loader = loader;
+        varProcessor = vProcessor;
     }
 
     public override void ProcessBegin(string rawText)
@@ -191,6 +193,8 @@ public class MessageProcessor : CommandProcessor
 
     bool WaitSelect()//6
     {
+        SwitchSkipState();
+
         SelectChoice();
 
         if (!(Input.GetKeyDown(KeyCode.Space)||choiceSelected)) return false;
@@ -206,7 +210,6 @@ public class MessageProcessor : CommandProcessor
         FocusChoice(choicesCounter.Now, true);
         choiceSelected = false;
         return true;
-
     }
     #endregion
 
@@ -226,12 +229,21 @@ public class MessageProcessor : CommandProcessor
     string ConvertVariable(string rawText)//_test_のようなテキストの場合、対応する変数を返す
     {
         string convertedText = rawText;
-        MatchCollection matches = new Regex("(_.*?_)").Matches(rawText);
+        /*MatchCollection matches = new Regex("(_.*?_)").Matches(rawText);
         for (int i = 0; i < matches.Count; i++)
         {
             string rawVariable = matches[i].Value;
             string variableText = rawVariable.Trim('_');//前後の_つぶす
             convertedText = convertedText.Replace(rawVariable, GetVariable(variableText));
+        }*/
+
+        MatchCollection matches = new Regex("(_.*?_)|(@.*?@)").Matches(rawText);
+        for(int i = 0; i < matches.Count; i++)
+        {
+            string rawName = matches[i].Value;
+            Debug.Log(rawName);
+            convertedText = convertedText.Replace(
+                rawName, varProcessor.GetVariableValue(rawName).ToString());
         }
         return convertedText;
     }

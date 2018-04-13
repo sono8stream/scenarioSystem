@@ -40,7 +40,7 @@ public class SoundProcessor : CommandProcessor
     {
         string[] text = keyText.Split(':');
         AudioClip bgmData = resourceLoader.GetBGM(text[0]);
-        if (bgmData == null)
+        if (bgmData == null)//未取得の時
         {
             if (clipLoadWaiter.Wait())
             {

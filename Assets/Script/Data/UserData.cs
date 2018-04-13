@@ -4,7 +4,7 @@ using System.Collections.Generic;
 [Serializable]
 public class UserData
 {
-    public Dictionary<string, int> variableDict;//テキストデータから読めるとイイかも
+    public Dictionary<string, int> variableDict;//消さない
 
     public static UserData instance = new UserData();
 
@@ -19,11 +19,7 @@ public class UserData
         }
 
         variableDict = SaveManager.LoadVariableDict();
-        if (variableDict == null)
-        {
-            variableDict = new Dictionary<string, int>();
-            variableDict.Add("test", 0);
-            variableDict.Add("test2", 100);
-        }
+        if (variableDict == null) variableDict = new Dictionary<string, int>();
+
     }
 }

@@ -15,6 +15,8 @@ public class ScenarioProcessor : MonoBehaviour
     //[SerializeField]
     //Logger logger;
     SoundProcessor sounder;
+    VariableProcessor varProcessor;
+    SceneProcessor sceneProcessor;
 
     TextLoader textLoader;
     List<CommandProcessor> processorList;
@@ -27,15 +29,21 @@ public class ScenarioProcessor : MonoBehaviour
         textLoader = new TextLoader(testText.text);
         resourceLoader.Initialize(this);
 
-        messenger.Initialize(textLoader);
-        imager.Initialize(resourceLoader);
         sounder = new SoundProcessor();
         sounder.Initialize(resourceLoader);
+        varProcessor = new VariableProcessor();
+        varProcessor.Initialize();
+        sceneProcessor = new SceneProcessor();
+        sceneProcessor.Initialize(this, resourceLoader);
+        messenger.Initialize(textLoader, varProcessor);
+        imager.Initialize(resourceLoader);
 
         processorList = new List<CommandProcessor>();
         processorList.Add(messenger);
         processorList.Add(imager);
         processorList.Add(sounder);
+        processorList.Add(varProcessor);
+        processorList.Add(sceneProcessor);
         processIndex = -1;
     }
 
@@ -67,5 +75,13 @@ public class ScenarioProcessor : MonoBehaviour
         processorList[processIndex].ProcessBegin(targetText);
         Debug.Log(processIndex);
         return true;
+    }
+
+    public void ChangeScript(TextAsset newScript)
+    {
+        testText = newScript;
+        textLoader = new TextLoader(testText.text);
+
+        varProcessor.Initialize();
     }
 }

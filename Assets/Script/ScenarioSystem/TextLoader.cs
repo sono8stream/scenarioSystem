@@ -84,7 +84,6 @@ public class TextLoader
 
             string targetText = validTexts[textsCounter.Now];
             Debug.Log(targetText);
-
             textsCounter.Count();
             if (targetText[0] == 'ー') continue;//ラベル飛ばす, StartsWithだと適切に分岐しない
 

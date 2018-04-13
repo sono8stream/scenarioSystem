@@ -9,13 +9,13 @@ public class ResourceLoader
     [SerializeField]
     Sprite defaultSprite;
 
-    const string defaultSpriteName = "none";
-    const string defaultBgmName = "none";
+    const string defaultName = "none";
 
     Dictionary<string, Sprite> charaSpriteDict;//読み込んだスプライトの実参照
     Dictionary<string, Sprite> sceneSpriteDict;//読み込んだスプライトの実参照
     Dictionary<string, AudioClip> bgmDict;//読み込んだスプライトの実参照
     Dictionary<string, AudioClip> seDict;//読み込んだスプライトの実参照
+    Dictionary<string, TextAsset> scriptDict;
 
     bool isLoading,loadFailed;
     ScenarioProcessor scenarioProcessor;
@@ -29,16 +29,19 @@ public class ResourceLoader
     void LoadDefault()
     {
         charaSpriteDict = new Dictionary<string, Sprite>();
-        charaSpriteDict.Add(defaultSpriteName, defaultSprite);
+        charaSpriteDict.Add(defaultName, defaultSprite);
 
         sceneSpriteDict = new Dictionary<string, Sprite>();
-        sceneSpriteDict.Add(defaultSpriteName, defaultSprite);
+        sceneSpriteDict.Add(defaultName, defaultSprite);
 
         bgmDict = new Dictionary<string, AudioClip>();
-        bgmDict.Add(defaultBgmName, null);
+        bgmDict.Add(defaultName, null);
 
         seDict = new Dictionary<string, AudioClip>();
-        seDict.Add(defaultBgmName, null);
+        seDict.Add(defaultName, null);
+
+        scriptDict = new Dictionary<string, TextAsset>();
+        scriptDict.Add(defaultName, null);
     }
 
     /// <summary>
@@ -49,22 +52,27 @@ public class ResourceLoader
     /// <returns></returns>
     public Sprite GetCharaSprite(string name)
     {
-        return GetResource(name, defaultSpriteName, charaSpriteDict, "Portrait");
+        return GetResource(name, defaultName, charaSpriteDict, "Portrait");
     }
 
     public Sprite GetSceneSprite(string name)
     {
-        return GetResource(name, defaultSpriteName, sceneSpriteDict, "Scenery");
+        return GetResource(name, defaultName, sceneSpriteDict, "Scenery");
     }
 
     public AudioClip GetBGM(string name)
     {
-        return GetResource(name,defaultBgmName, bgmDict, "BGM");
+        return GetResource(name,defaultName, bgmDict, "BGM");
     }
 
     public AudioClip GetSE(string name)
     {
-        return GetResource(name, defaultBgmName, seDict, "SE");
+        return GetResource(name, defaultName, seDict, "SE");
+    }
+
+    public TextAsset GetScript(string name)
+    {
+        return GetResource(name, defaultName, scriptDict, "ScenarioScript");
     }
 
     Type GetResource<Type>(string name, string defaultName,
