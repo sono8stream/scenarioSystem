@@ -94,11 +94,23 @@ public class ScriptEditor : EditorWindow
 
                 using (new GUILayout.HorizontalScope())
                 {
-                    if (GUILayout.Button("空行追加", EditorStyles.miniButtonLeft))
+                    if (GUILayout.Button("選択行に空行追加", EditorStyles.miniButtonLeft))
                     {
-                        InsertLine("");
+                        InsertLine(" ");
                     }
-                    if (GUILayout.Button("削除", EditorStyles.miniButtonRight))
+                    if (GUILayout.Button("↓一行コピー", EditorStyles.miniButtonMid))
+                    {
+                        int index = scriptToggles.FindIndex(x => x);
+                        if (index >= 0)
+                        {
+                            inputMessage = scriptLines[index];
+                        }
+                    }
+                    if (GUILayout.Button("全選択 解除", EditorStyles.miniButtonMid))
+                    {
+                        scriptToggles = scriptToggles.Select(x => x = false).ToList();
+                    }
+                    if (GUILayout.Button("選択行 削除", EditorStyles.miniButtonRight))
                     {
                         RemoveSelectedLine();
                     }
@@ -136,8 +148,7 @@ public class ScriptEditor : EditorWindow
                         }
                         InsertLine(@"[m\1\0]");
                     }
-                    if (GUILayout.Button("書き込み(入力待ち)",
-                        EditorStyles.miniButtonMid))
+                    if (GUILayout.Button("書き込み(入力待ち)", EditorStyles.miniButtonMid))
                     {
                         foreach (string s in strs)
                         {
@@ -145,20 +156,25 @@ public class ScriptEditor : EditorWindow
                         }
                         InsertLine(@"[m\2\0]");
                     }
-                    if (GUILayout.Button("書き込み",
-                        EditorStyles.miniButtonMid))
+                    if (GUILayout.Button("書き込み", EditorStyles.miniButtonMid))
                     {
                         foreach (string s in strs)
                         {
                             InsertLine(s);
                         }
                     }
-                    if (GUILayout.Button("コメント",
-                        EditorStyles.miniButtonRight))
+                    if (GUILayout.Button("コメント", EditorStyles.miniButtonMid))
                     {
                         foreach (string s in strs)
                         {
                             InsertLine("//" + s);
+                        }
+                    }
+                    if (GUILayout.Button("クリア", EditorStyles.miniButtonRight))
+                    {
+                        foreach (string s in strs)
+                        {
+                            inputMessage = "";
                         }
                     }
                 }
@@ -271,38 +287,39 @@ public class ScriptEditor : EditorWindow
     {
         if (string.IsNullOrEmpty(text)) return;
 
-        int index = SelectedIndex();
-        Debug.Log(index);
-        scriptLines.Insert(index, text);
-        scriptToggles.Insert(index, false);
-        GUI.FocusControl((index+1).ToString());
+        int length = scriptToggles.Count;
+        for (int i = 0; i < length; i++)
+        {
+            if (!scriptToggles[i]) continue;
+
+            scriptLines.Insert(i, text);
+            scriptToggles.Insert(i, false);
+            length++;
+            i++;
+            Debug.Log("Inserted");
+        }
+
+        if (!scriptToggles[scriptToggles.Count - 1] && length == scriptToggles.Count)
+        {
+            int index = scriptToggles.Count - 1;
+            scriptLines.Insert(index, text);
+            scriptToggles.Insert(index, false);
+            scriptToggles[index + 1] = true;
+        }
     }
 
     void RemoveSelectedLine()
     {
-        int index;
-        string indexText = GUI.GetNameOfFocusedControl();
-        if (indexText.Equals("") || !int.TryParse(indexText, out index)
-            || index >= scriptLines.Count - 1) return;
-
-        scriptLines.RemoveAt(index);
-        scriptToggles.RemoveAt(index);
-        if (scriptLines.Count == 0) return;
-
-        string focus = index > 0 ? (index - 1).ToString() : "";
-        GUI.FocusControl(focus);//表示更新のため、フォーカスを変える
-    }
-
-    int SelectedIndex()
-    {
-        int index;
-        string indexText = GUI.GetNameOfFocusedControl();
-        if (indexText.Equals("") || !int.TryParse(indexText, out index)
-            || index >= scriptLines.Count)
+        int checkLength = scriptToggles.Count - 1;
+        for(int i = 0; i < checkLength; i++)
         {
-            index = scriptLines.Count - 1;
+            if (!scriptToggles[i]) continue;
+
+            scriptLines.RemoveAt(i);
+            scriptToggles.RemoveAt(i);
+            checkLength--;
+            i--;
         }
-        return index;
     }
 
     void SwitchFocusedToggle()

@@ -7,14 +7,19 @@ public class CommandMessages
     List<string> messageCommands;
     List<string> imageCommands;
     List<string> soundCommands;
+    List<string> sceneCommands;
+    List<string> variableCommands;
 
     public CommandMessages()
     {
         InitializeMessageCommands();
         InitializeImageCommands();
         InitializeSoundCommands();
+        InitializeSceneCommands();
+        InitializeVariableCommands();
     }
 
+    #region InitializeCommands
     void InitializeMessageCommands()
     {
         messageCommands = new List<string>();
@@ -46,6 +51,20 @@ public class CommandMessages
         soundCommands.Add("SE再生");
     }
 
+    void InitializeSceneCommands()
+    {
+        sceneCommands = new List<string>();
+        sceneCommands.Add("シナリオスクリプト切替");
+        sceneCommands.Add("シーン切替");
+    }
+
+    void InitializeVariableCommands()
+    {
+        variableCommands = new List<string>();
+        variableCommands.Add("変数操作");
+    }
+#endregion
+
     public string GetCommandMessage(string commandText)
     {
         string[] targetTexts = commandText.Split('\\');
@@ -69,6 +88,12 @@ public class CommandMessages
                 break;
             case 's'://sound
                 message = GetCommandMessage(soundCommands, commandNo);
+                break;
+            case 'e'://scene
+                message = GetCommandMessage(sceneCommands, commandNo);
+                break;
+            case 'v'://variable
+                message = GetCommandMessage(variableCommands, commandNo);
                 break;
             default:
                 return commandText;

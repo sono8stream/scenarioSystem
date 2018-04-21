@@ -22,6 +22,10 @@ public class ScenarioProcessor : MonoBehaviour
     List<CommandProcessor> processorList;
     int processIndex;
 
+    bool onEnd;
+
+    public bool OnEnd { get { return onEnd; } }
+
     // Use this for initialization
     void Start()
     {
@@ -45,12 +49,20 @@ public class ScenarioProcessor : MonoBehaviour
         processorList.Add(varProcessor);
         processorList.Add(sceneProcessor);
         processIndex = -1;
+
+        onEnd = false;
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (processIndex == -1 && !SelectProcessor()) return;//もう読み込めない
+        if (onEnd) return;
+
+        if (processIndex == -1 && !SelectProcessor())
+        {
+            onEnd = true;
+            return;//もう読み込めない
+        }
 
         if (processorList[processIndex].Process())
         {
@@ -81,7 +93,7 @@ public class ScenarioProcessor : MonoBehaviour
     {
         testText = newScript;
         textLoader = new TextLoader(testText.text);
-
         varProcessor.Initialize();
+        onEnd = false;
     }
 }
