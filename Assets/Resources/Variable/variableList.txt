@@ -2,3 +2,4 @@ a:10
 aiueo:0
 i:0
 kakikukeko:100
+eufieu:0

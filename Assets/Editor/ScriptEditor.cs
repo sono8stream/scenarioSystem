@@ -15,7 +15,7 @@ public class ScriptEditor : EditorWindow
     const string SCENERY_FOLDER_PATH = "Assets/Resources/Scenery/";
     const string BGM_FOLDER_PATH = "Assets/Resources/BGM/";
     const string SE_FOLDER_PATH = "Assets/Resources/SE/";
-    
+
     static VariableEditor variableEditor;
     static string[] sceneNames;
 
@@ -24,6 +24,7 @@ public class ScriptEditor : EditorWindow
     TextAsset script = null;
     string scriptName;
     List<string> scriptLines = new List<string>();
+    List<bool> scriptToggles = new List<bool>();
     Vector2 scriptScrollPosition = Vector2.zero;
     int varIndex = 0;
 
@@ -45,7 +46,7 @@ public class ScriptEditor : EditorWindow
 
     int changeVarIndex = 0;
     string[] operators = new string[5] { "=", "+=", "-=", "*=", "/=" };
-    int operatorIndex=0;
+    int operatorIndex = 0;
     int changeVal;
     int subVarIndex = 0;
 
@@ -54,12 +55,13 @@ public class ScriptEditor : EditorWindow
     {
         //最もよくわかっていない部分　この順番じゃないとダメっぽい
         ScriptEditor editor = GetWindow<ScriptEditor>();
-        editor.position = new Rect(150, 150, 1020, 600);//サイズ変更
+        editor.position = new Rect(150, 150, 1160, 650);//サイズ変更
         variableEditor = GetWindow<VariableEditor>(typeof(ScriptEditor));
         editor.Focus();
         variableEditor.Initialize();
 
         InitializeSceneNames();
+        Debug.Log("OnCreate終了");
     }
 
     private void OnGUI()
@@ -76,10 +78,10 @@ public class ScriptEditor : EditorWindow
                 scriptName = script.name;
                 LoadScript();
             }
-        }
+        }//ファイル読み込み
         EditorGUILayout.Space();
 
-        using (new GUILayout.HorizontalScope(GUILayout.Width(900)))
+        using (new GUILayout.HorizontalScope(GUILayout.Height(500)))
         {
             using (new GUILayout.VerticalScope(GUILayout.Width(600)))
             {
@@ -87,6 +89,9 @@ public class ScriptEditor : EditorWindow
                         scriptScrollPosition, GUI.skin.box);
                 WriteScript();
                 EditorGUILayout.EndScrollView();
+
+                SwitchFocusedToggle();
+
                 using (new GUILayout.HorizontalScope())
                 {
                     if (GUILayout.Button("空行追加", EditorStyles.miniButtonLeft))
@@ -99,9 +104,8 @@ public class ScriptEditor : EditorWindow
                     }
                 }
             }
-            EditorGUILayout.Space();
 
-            using (new GUILayout.VerticalScope(GUILayout.Width(300)))
+            using (new GUILayout.VerticalScope(GUI.skin.box/*,GUILayout.Width(200)*/))
             {
                 MessageGUI();
                 ImageGUI();
@@ -165,11 +169,12 @@ public class ScriptEditor : EditorWindow
                 if (variableEditor != null && variableEditor.AllVariableNames != null)
                 {
                     varIndex = EditorGUILayout.Popup(
-                        "変数", varIndex, variableEditor.AllVariableNames);
-                }
-                if (GUILayout.Button("変数表示"))
-                {
-                    inputMessage += variableEditor.GetVariableNameByIndex(varIndex);
+                        "・変数表示", varIndex, variableEditor.AllVariableNames);
+
+                    if (GUILayout.Button("変数表示"))
+                    {
+                        inputMessage += variableEditor.GetVariableNameByIndex(varIndex);
+                    }
                 }
             }
         }
@@ -185,14 +190,14 @@ public class ScriptEditor : EditorWindow
         if (GUILayout.Button("Save") && !string.IsNullOrEmpty(scriptName))
         {
             string rawScript = "";
-            if (scriptLines.Count > 0)
+            if (scriptLines.Count > 0 && !string.IsNullOrEmpty(scriptLines[0]))
             {
                 foreach (string s in scriptLines)
                 {
                     rawScript += s + Environment.NewLine;
                 }
                 rawScript = rawScript.Substring(
-                    0, rawScript.Length - Environment.NewLine.Length);
+                    0, rawScript.Length - Environment.NewLine.Length * 2);
             }
             SaveScript(rawScript);
         }
@@ -229,6 +234,14 @@ public class ScriptEditor : EditorWindow
 
         scriptLines = new List<string>();
         scriptLines.AddRange(Regex.Split(script.text, "\r\n|\r|\n"));
+        scriptLines.Add("");
+        int lineCount = scriptLines.Count;
+        scriptToggles = new List<bool>();
+        for (int i = 0; i < lineCount; i++)
+        {
+            scriptToggles.Add(false);
+        }
+        Debug.Log(scriptToggles.Count);
     }
     #endregion
 
@@ -242,21 +255,27 @@ public class ScriptEditor : EditorWindow
         //foreach (string s in strs)
         foreach (string s in scriptLines)
         {
-            GUI.SetNextControlName(cnt.ToString());//毎回セットする必要あり
-            EditorGUILayout.SelectableLabel(messages.GetCommandMessage(s),
-                GUI.skin.textField, GUILayout.Height(16));
+            using (new GUILayout.HorizontalScope())
+            {
+                scriptToggles[cnt] = EditorGUILayout.Toggle(
+                    scriptToggles[cnt],GUILayout.Width(15));
+                GUI.SetNextControlName(cnt.ToString());//毎回セットする必要あり
+                EditorGUILayout.SelectableLabel(messages.GetCommandMessage(s),
+                    GUI.skin.textField, GUILayout.Height(16));
+            }
             cnt++;
         }
     }
 
     void InsertLine(string text)
     {
-        //scriptText += text + Environment.NewLine;
+        if (string.IsNullOrEmpty(text)) return;
+
         int index = SelectedIndex();
-        //if (scriptLines.Count == 0) index = 0;
         Debug.Log(index);
         scriptLines.Insert(index, text);
-        GUI.FocusControl(index.ToString());
+        scriptToggles.Insert(index, false);
+        GUI.FocusControl((index+1).ToString());
     }
 
     void RemoveSelectedLine()
@@ -264,9 +283,10 @@ public class ScriptEditor : EditorWindow
         int index;
         string indexText = GUI.GetNameOfFocusedControl();
         if (indexText.Equals("") || !int.TryParse(indexText, out index)
-            || index >= scriptLines.Count) return;
+            || index >= scriptLines.Count - 1) return;
 
         scriptLines.RemoveAt(index);
+        scriptToggles.RemoveAt(index);
         if (scriptLines.Count == 0) return;
 
         string focus = index > 0 ? (index - 1).ToString() : "";
@@ -280,13 +300,20 @@ public class ScriptEditor : EditorWindow
         if (indexText.Equals("") || !int.TryParse(indexText, out index)
             || index >= scriptLines.Count)
         {
-            index = scriptLines.Count;
-        }
-        else
-        {
-            index++;
+            index = scriptLines.Count - 1;
         }
         return index;
+    }
+
+    void SwitchFocusedToggle()
+    {
+        int index;
+        string indexText = GUI.GetNameOfFocusedControl();
+        if (indexText.Equals("") || !int.TryParse(indexText, out index)
+            || index >= scriptLines.Count) return;
+
+        scriptToggles[index] = !scriptToggles[index];
+        GUI.FocusControl("");
     }
     #endregion
 
@@ -441,7 +468,7 @@ public class ScriptEditor : EditorWindow
 
     void SceneGUI()
     {
-        using(new GUILayout.VerticalScope(GUI.skin.box))
+        using (new GUILayout.VerticalScope(GUI.skin.box))
         {
             using (new GUILayout.HorizontalScope())
             {
@@ -482,26 +509,36 @@ public class ScriptEditor : EditorWindow
             if (variableEditor != null && variableEditor.AllVariableNames != null)
             {
                 changeVarIndex = EditorGUILayout.Popup(
-                    "・変数操作", changeVarIndex, variableEditor.AllVariableNames);
-            }
+                    "・変数操作", changeVarIndex, variableEditor.AllVariableNames,
+                    GUILayout.Width(250));
 
-            operatorIndex = EditorGUILayout.Popup("", operatorIndex, operators);
-            changeVal = EditorGUILayout.IntField(changeVal);
+                operatorIndex = EditorGUILayout.Popup("", operatorIndex, operators,
+                    GUILayout.Width(50));
 
-            using(new GUILayout.VerticalScope())
-            {
-                if (GUILayout.Button("変数変更"))
+                using (new GUILayout.VerticalScope())
                 {
-                    /*InsertLine(string.Format(@"[v\0\{0}:{1}:{2}]",
-                        variableEditor.AllVariableNames[changeVarIndex]));*/
-                    inputMessage += variableEditor.GetVariableNameByIndex(varIndex);
+                    changeVal = EditorGUILayout.IntField(changeVal, GUILayout.Width(100));
+                    subVarIndex = EditorGUILayout.Popup(
+                        "", subVarIndex, variableEditor.AllVariableNames,
+                        GUILayout.Width(100));
                 }
 
-            }
-
-            using (new GUILayout.VerticalScope())
-            {
-
+                using (new GUILayout.VerticalScope())
+                {
+                    if (GUILayout.Button("変数変更", GUILayout.Width(100)))
+                    {
+                        InsertLine(string.Format(@"[v\0\{0}:{1}:{2}]",
+                            variableEditor.GetVariableNameByIndex(changeVarIndex),
+                            operators[operatorIndex], changeVal));
+                    }
+                    if (GUILayout.Button("変数変更", GUILayout.Width(100)))
+                    {
+                        InsertLine(string.Format(@"[v\0\{0}:{1}:{2}]",
+                            variableEditor.GetVariableNameByIndex(changeVarIndex),
+                            operators[operatorIndex],
+                            variableEditor.GetVariableNameByIndex(subVarIndex)));
+                    }
+                }
             }
         }
     }

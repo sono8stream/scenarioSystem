@@ -80,6 +80,7 @@ public class VariableEditor : EditorWindow
     public void Initialize()
     {
         LoadVariables();
+        Debug.Log("Loaded");
     }
 
     void LoadVariables()

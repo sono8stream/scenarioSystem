@@ -1,4 +1,9 @@
 シーン遷移させるよ
-[m\1\0]
-[e\0\testScript]
+[m\2\0]
+[v\0\_eufieu_:=:0]
+[v\0\_eufieu_:+=:@0@]
+_eufieu_
+[m\2\0]
+[v\0\_eufieu_:+=:5]
+_eufieu_
 [m\2\0]
