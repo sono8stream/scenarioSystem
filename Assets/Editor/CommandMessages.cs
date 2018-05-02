@@ -30,6 +30,8 @@ public class CommandMessages
         messageCommands.Add("速度変更");
         messageCommands.Add("選択肢追加");
         messageCommands.Add("選択待ち");
+        messageCommands.Add("オート開始");
+        messageCommands.Add("オート終了");
     }
 
     void InitializeImageCommands()
@@ -62,6 +64,7 @@ public class CommandMessages
     {
         variableCommands = new List<string>();
         variableCommands.Add("変数操作");
+        variableCommands.Add("変数分岐");
     }
 #endregion
 

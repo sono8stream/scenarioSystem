@@ -36,7 +36,7 @@ public class ScenarioProcessor : MonoBehaviour
         sounder = new SoundProcessor();
         sounder.Initialize(resourceLoader);
         varProcessor = new VariableProcessor();
-        varProcessor.Initialize();
+        varProcessor.Initialize(textLoader);
         sceneProcessor = new SceneProcessor();
         sceneProcessor.Initialize(this, resourceLoader);
         messenger.Initialize(textLoader, varProcessor);
@@ -93,7 +93,7 @@ public class ScenarioProcessor : MonoBehaviour
     {
         testText = newScript;
         textLoader = new TextLoader(testText.text);
-        varProcessor.Initialize();
+        varProcessor.Initialize(textLoader);
         onEnd = false;
     }
 }

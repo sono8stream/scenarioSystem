@@ -32,6 +32,7 @@ public class ScriptEditor : EditorWindow
     string inputMessage = "";
     int messageSpeed;
     string choiceName;
+    List<string> choiceNameList = new List<string>();
 
     int charaNo;
     int moveLength;
@@ -46,7 +47,9 @@ public class ScriptEditor : EditorWindow
 
     int changeVarIndex = 0;
     string[] operators = new string[5] { "=", "+=", "-=", "*=", "/=" };
+    string[] conditionOperators = new string[5] { "<", "<=", ">", ">=", "=" };
     int operatorIndex = 0;
+    int conditionOperatorIndex = 0;
     int changeVal;
     int subVarIndex = 0;
 
@@ -55,7 +58,7 @@ public class ScriptEditor : EditorWindow
     {
         //最もよくわかっていない部分　この順番じゃないとダメっぽい
         ScriptEditor editor = GetWindow<ScriptEditor>();
-        editor.position = new Rect(150, 150, 1160, 650);//サイズ変更
+        editor.position = new Rect(150, 150, 1160, 700);//サイズ変更
         variableEditor = GetWindow<VariableEditor>(typeof(ScriptEditor));
         editor.Focus();
         variableEditor.Initialize();
@@ -163,11 +166,28 @@ public class ScriptEditor : EditorWindow
                             InsertLine(s);
                         }
                     }
+                    if (GUILayout.Button("ジャンプ", EditorStyles.miniButtonMid))
+                    {
+                        if (strs.Length > 0 && !string.IsNullOrEmpty(strs[0]))
+                        {
+                            InsertLine("→" + strs[0]);
+                        }
+                    }
+                    if (GUILayout.Button("ラベル", EditorStyles.miniButtonMid))
+                    {
+                        if (strs.Length > 0 && !string.IsNullOrEmpty(strs[0]))
+                        {
+                            InsertLine("ー" + strs[0]);
+                        }
+                    }
                     if (GUILayout.Button("コメント", EditorStyles.miniButtonMid))
                     {
                         foreach (string s in strs)
                         {
-                            InsertLine("//" + s);
+                            if (!string.IsNullOrEmpty(s))
+                            {
+                                InsertLine("//" + s);
+                            }
                         }
                     }
                     if (GUILayout.Button("クリア", EditorStyles.miniButtonRight))
@@ -206,14 +226,14 @@ public class ScriptEditor : EditorWindow
         if (GUILayout.Button("Save") && !string.IsNullOrEmpty(scriptName))
         {
             string rawScript = "";
-            if (scriptLines.Count > 0 && !string.IsNullOrEmpty(scriptLines[0]))
+            foreach (string s in scriptLines)
             {
-                foreach (string s in scriptLines)
-                {
-                    rawScript += s + Environment.NewLine;
-                }
+                rawScript += s + Environment.NewLine;
+            }
+            if (scriptLines.Count > 0)
+            {
                 rawScript = rawScript.Substring(
-                    0, rawScript.Length - Environment.NewLine.Length * 2);
+                    0, rawScript.Length - Environment.NewLine.Length * 2);//最後の空行消す
             }
             SaveScript(rawScript);
         }
@@ -287,7 +307,7 @@ public class ScriptEditor : EditorWindow
     {
         if (string.IsNullOrEmpty(text)) return;
 
-        int length = scriptToggles.Count;
+        /*int length = scriptToggles.Count;
         for (int i = 0; i < length; i++)
         {
             if (!scriptToggles[i]) continue;
@@ -305,7 +325,15 @@ public class ScriptEditor : EditorWindow
             scriptLines.Insert(index, text);
             scriptToggles.Insert(index, false);
             scriptToggles[index + 1] = true;
+        }*/
+        int index = scriptToggles.IndexOf(true);
+        if (index == -1)
+        {
+            index = scriptToggles.Count - 1;
         }
+        scriptLines.Insert(index, text);
+        scriptToggles.Insert(index, false);
+        scriptToggles[index + 1] = true;
     }
 
     void RemoveSelectedLine()
@@ -354,12 +382,32 @@ public class ScriptEditor : EditorWindow
                 if (GUILayout.Button("選択肢追加"))
                 {
                     InsertLine(string.Format(@"[m\5\{0}]", choiceName));
+                    choiceNameList.Add(choiceName);
                 }
             }
 
             if (GUILayout.Button("選択待ち"))
             {
                 InsertLine(@"[m\6\0]");
+                int choiceCnt = choiceNameList.Count;
+                for (int i = 0; i < choiceCnt; i++)
+                {
+                    InsertLine("ー" + choiceNameList[i]);
+                    InsertLine(" ");
+                }
+                choiceNameList = new List<string>();
+            }
+
+            using (new GUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("オート開始"))
+                {
+                    InsertLine(@"[m\7\100]");
+                }
+                if (GUILayout.Button("オート終了"))
+                {
+                    InsertLine(@"[m\8\0]");
+                }
             }
         }
     }
@@ -554,6 +602,55 @@ public class ScriptEditor : EditorWindow
                             variableEditor.GetVariableNameByIndex(changeVarIndex),
                             operators[operatorIndex],
                             variableEditor.GetVariableNameByIndex(subVarIndex)));
+                    }
+                }
+            }
+        }
+
+        using (new GUILayout.HorizontalScope(GUI.skin.box))
+        {
+            if (variableEditor != null && variableEditor.AllVariableNames != null)
+            {
+                changeVarIndex = EditorGUILayout.Popup(
+                       "・変数分岐", changeVarIndex, variableEditor.AllVariableNames,
+                       GUILayout.Width(250));
+
+                conditionOperatorIndex = EditorGUILayout.Popup("",
+                    conditionOperatorIndex, conditionOperators, GUILayout.Width(50));
+
+                using (new GUILayout.VerticalScope())
+                {
+                    changeVal = EditorGUILayout.IntField(changeVal, GUILayout.Width(100));
+                    subVarIndex = EditorGUILayout.Popup(
+                        "", subVarIndex, variableEditor.AllVariableNames,
+                        GUILayout.Width(100));
+                }
+
+                using (new GUILayout.VerticalScope())
+                {
+                    if (GUILayout.Button("変数分岐", GUILayout.Width(100)))
+                    {
+                        string varName = variableEditor.GetVariableNameByIndex(changeVarIndex);
+                        string condition = conditionOperators[conditionOperatorIndex];
+                        InsertLine(string.Format(@"[v\1\{0}:{1}:{2}]",
+                            varName, condition, changeVal));
+                        InsertLine(string.Format(
+                            "ー{0}{1}{2}", varName, condition, changeVal));
+                        InsertLine(string.Format(
+                            "ーNot {0}{1}{2}", varName, condition, changeVal));
+                    }
+                    if (GUILayout.Button("変数分岐", GUILayout.Width(100)))
+                    {
+                        string varName = variableEditor.GetVariableNameByIndex(changeVarIndex);
+                        string condition = conditionOperators[conditionOperatorIndex];
+                        string subVarName = variableEditor.GetVariableNameByIndex(subVarIndex);
+                        InsertLine(string.Format(
+                            @"[v\1\{0}:{1}:{2}]", varName, condition, subVarName));
+                        InsertLine(string.Format(
+                            "ー{0}{1}{2}", varName, condition, subVarName));
+                        InsertLine(string.Format(
+                            "ーNot {0}{1}{2}", varName, condition, subVarName));
+
                     }
                 }
             }

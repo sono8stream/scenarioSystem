@@ -26,9 +26,12 @@ public class MessageProcessor : CommandProcessor
     bool onSkip;
     bool choiceSelected;
     bool onTag;
+    bool onAuto;
+    int autoWaitLim;
     VariableProcessor varProcessor;
     Waiter messageWaiter;
     Waiter inputWaiter;
+    Waiter autoWaiter;
     Counter messageLengthCounter;
     Counter messageBoxCounter;//メッセージbox内トータル文字数
     Counter waitCounter;
@@ -47,14 +50,18 @@ public class MessageProcessor : CommandProcessor
         commandList.Add(ChangeSpeed);
         commandList.Add(AddChoice);//[m\5\〇〇]
         commandList.Add(WaitSelect);
+        commandList.Add(EnableAuto);
+        commandList.Add(DisableAuto);
 
         waitImage.enabled = false;
 
         messageWaiter = new Waiter(defaultCount);
         inputWaiter = new Waiter(inputWaitCount);
         messageLengthCounter = new Counter(1, true);
-        messageBoxCounter = new Counter(100);
+        messageBoxCounter = new Counter(1000);
         waitCounter = new Counter(waitCount);
+        autoWaitLim = 30;
+        autoWaiter = new Waiter(autoWaitLim);
         
         choicesCounter = new Counter(0);
         FocusChoice(choicesCounter.Now, true);
@@ -119,7 +126,7 @@ public class MessageProcessor : CommandProcessor
             return true;
         }
 
-        if (InputEnter() || onSkip || messageWaiter.Wait())
+        if (InputEnter() || onSkip || messageWaiter.Wait())//文字無制限
         {
             messageWaiter.Initialize();
             messageText.text
@@ -144,10 +151,11 @@ public class MessageProcessor : CommandProcessor
         SwitchSkipState();
 
         if (Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0)
-            || (onSkip && inputWaiter.Wait()))
+            || (onSkip && inputWaiter.Wait()) || (onAuto && autoWaiter.Wait()))
         {
             inputWaiter.Initialize();
             waitCounter.Initialize();
+            autoWaiter.Initialize();
             waitImage.enabled = false;
             waitImage.transform.eulerAngles = Vector3.zero;
             return true;
@@ -209,6 +217,23 @@ public class MessageProcessor : CommandProcessor
         choicesCounter.Initialize(0);
         FocusChoice(choicesCounter.Now, true);
         choiceSelected = false;
+        return true;
+    }
+
+    bool EnableAuto()
+    {
+        onAuto = true;
+        int counter;
+        if(int.TryParse(keyText,out counter))
+        {
+            autoWaiter.Initialize(counter);
+        }
+        return true;
+    }
+
+    bool DisableAuto()
+    {
+        onAuto = false;
         return true;
     }
     #endregion
