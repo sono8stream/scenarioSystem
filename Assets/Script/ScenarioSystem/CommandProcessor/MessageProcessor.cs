@@ -12,6 +12,8 @@ public class MessageProcessor : CommandProcessor
     [SerializeField]
     Text messageText;
     [SerializeField]
+    int maxLineCount;
+    [SerializeField]
     Transform choicesTransform;
     //[SerializeField]
     //Logger logger;
