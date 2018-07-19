@@ -5,18 +5,21 @@ using System.Collections.Generic;
 public class UserData
 {
     public Dictionary<string, int> variableDict;//消さない
+    /*
+    public string[] varNames;
+    public int[] varValues;*/
 
     public static UserData instance = new UserData();
 
     private UserData()
     {
         //自動ロード処理
-        UserData userData = SaveManager.Load();
+        /*UserData userData = SaveManager.Load();
         if (userData != null)
         {
             instance = userData;
             return;
-        }
+        }*/
 
         variableDict = SaveManager.LoadVariableDict();
         if (variableDict == null) variableDict = new Dictionary<string, int>();

@@ -748,11 +748,16 @@ public class ScriptEditor : EditorWindow
 
     static void InitializeSceneNames()
     {
-        int sceneCount = SceneManager.sceneCount;
+        int sceneCount = SceneManager.sceneCountInBuildSettings;
         sceneNames = new string[sceneCount];
         for (int i = 0; i < sceneCount; i++)
         {
-            sceneNames[i] = SceneManager.GetSceneAt(i).name;
+            string name = SceneManager.GetSceneByBuildIndex(i).name;
+            if (string.IsNullOrEmpty(name))
+            {
+                name = i.ToString();
+            }
+            sceneNames[i] = name;
         }
     }
 

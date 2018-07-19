@@ -4,6 +4,10 @@ using UnityEngine;
 
 public class ScenarioProcessor : MonoBehaviour
 {
+    //外部から取得可
+    public bool OnEnd { get { return onEnd; } }
+    public int CurrentLine { get { return 0; } }
+
     [SerializeField]
     TextAsset testText;
     [SerializeField]
@@ -23,8 +27,6 @@ public class ScenarioProcessor : MonoBehaviour
     int processIndex;
 
     bool onEnd;
-
-    public bool OnEnd { get { return onEnd; } }
 
     // Use this for initialization
     void Start()
